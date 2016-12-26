@@ -290,11 +290,11 @@ function render(time) {
     uniforms.u_worldViewProjection = worldViewProj;
 
     // //skydome
-    // gl.useProgram(gl_ProgramInfos["Skydome"].program);
-    // twgl.setUniforms(gl_ProgramInfos["Skydome"], uniforms);
+    gl.useProgram(gl_ProgramInfos["Skydome"].program);
+    twgl.setUniforms(gl_ProgramInfos["Skydome"], uniforms);
 
-    // twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Skydome"], skydome.bufferInfo);
-    // gl.drawElements(gl.TRIANGLES, skydome.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
+    twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Skydome"], skydome.bufferInfo);
+    gl.drawElements(gl.TRIANGLES, skydome.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
 
     //objects
     gl.useProgram(gl_ProgramInfos["Basic"].program);
