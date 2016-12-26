@@ -289,12 +289,12 @@ function render(time) {
     uniforms.u_worldInverseTranspose = invworld_transpose;
     uniforms.u_worldViewProjection = worldViewProj;
 
-    //skydome
-    gl.useProgram(gl_ProgramInfos["Skydome"].program);
-    twgl.setUniforms(gl_ProgramInfos["Skydome"], uniforms);
+    // //skydome
+    // gl.useProgram(gl_ProgramInfos["Skydome"].program);
+    // twgl.setUniforms(gl_ProgramInfos["Skydome"], uniforms);
 
-    twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Skydome"], skydome.bufferInfo);
-    gl.drawElements(gl.TRIANGLES, skydome.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
+    // twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Skydome"], skydome.bufferInfo);
+    // gl.drawElements(gl.TRIANGLES, skydome.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
 
     //objects
     gl.useProgram(gl_ProgramInfos["Basic"].program);
@@ -303,14 +303,12 @@ function render(time) {
     twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.central_pole_bufferInfo);
     gl.drawElements(gl.TRIANGLES, pylon.central_pole_bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
 
-    for (var i=0; i<2; ++i) {        
-        twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.tbar_bufferInfo[i]);
-        gl.drawElements(gl.TRIANGLES, pylon.tbar_bufferInfo[i].numElements, gl.UNSIGNED_SHORT, 0);
-    }
+    // for (var i=0; i<2; ++i) {        
+    //     twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.tbar_bufferInfo[i]);
+    //     gl.drawElements(gl.TRIANGLES, pylon.tbar_bufferInfo[i].numElements, gl.UNSIGNED_SHORT, 0);
+    // }
 
-    twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.battery_bufferInfo);
-    gl.drawElements(gl.TRIANGLES, pylon.battery_bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
-
-
+    // twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.battery_bufferInfo);
+    // gl.drawElements(gl.TRIANGLES, pylon.battery_bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
   }
 }
