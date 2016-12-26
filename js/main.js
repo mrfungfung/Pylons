@@ -303,12 +303,12 @@ function render(time) {
     twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.central_pole_bufferInfo);
     gl.drawElements(gl.TRIANGLES, pylon.central_pole_bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
 
-    // for (var i=0; i<2; ++i) {        
-    //     twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.tbar_bufferInfo[i]);
-    //     gl.drawElements(gl.TRIANGLES, pylon.tbar_bufferInfo[i].numElements, gl.UNSIGNED_SHORT, 0);
-    // }
+    for (var i=0; i<2; ++i) {        
+        twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.tbar_bufferInfo[i]);
+        gl.drawElements(gl.TRIANGLES, pylon.tbar_bufferInfo[i].numElements, gl.UNSIGNED_SHORT, 0);
+    }
 
-    // twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.battery_bufferInfo);
-    // gl.drawElements(gl.TRIANGLES, pylon.battery_bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
+    twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.battery_bufferInfo);
+    gl.drawElements(gl.TRIANGLES, pylon.battery_bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
   }
 }
