@@ -1,4 +1,4 @@
-//make the battery better: bottom slightly narrower, rings to attach to central pole. fans/camber at end, 'side protrusions', 2 top attenas (wires attach to pole), could sit ona bar...
+//make the battery better: rings to attach to central pole. 'side protrusions', 2 top attenas (wires attach to pole), could sit ona bar...
 //battery pack 2: square pack, extra box protusion (cap / side), attach via bar
 //tbar version 1: equal balance, top discs (semicircles flattened), vertical spring things, side protusions
 //tbar version 2: complete one side balance, 
@@ -126,6 +126,82 @@ function construct_tbars() {
 }
 
 //*********************************************************
+function construct_cylinder(NUM_CYLINDER_POINTS, 
+                            RADIUS, 
+                            BOTTOM_RADIUS, 
+                            HEIGHT, 
+                            center_pos, 
+                            vb, 
+                            normals, 
+                            colors, 
+                            indices, 
+                            JAG_RADIUS_RATIO) {
+
+    var v_offset = vb.length/3;
+    
+    var theta = 2.0*Math.PI / NUM_CYLINDER_POINTS;
+    for (var i=0; i<NUM_CYLINDER_POINTS; ++i) {
+        var cos = Math.cos(i*theta);
+        var sin = Math.sin(i*theta);
+        var x = RADIUS*cos;
+        var z = RADIUS*sin;
+        var bx = BOTTOM_RADIUS*cos;
+        var bz = BOTTOM_RADIUS*sin;
+
+        if (i%2 == 0) {
+            x *= JAG_RADIUS_RATIO;
+            z *= JAG_RADIUS_RATIO;
+            bx *= JAG_RADIUS_RATIO;
+            bz *= JAG_RADIUS_RATIO;
+        }
+
+        //outer body
+        vb.push(bx + center_pos[0]); vb.push(-0.5*HEIGHT + center_pos[1]); vb.push(bz);
+        vb.push(x + center_pos[0]); vb.push(0.5*HEIGHT + center_pos[1]); vb.push(z);
+
+        normals.push(0); normals.push(0); normals.push(0); 
+        normals.push(0); normals.push(0); normals.push(0); 
+
+        colors.push(255);colors.push(0);colors.push(255);
+        colors.push(255);colors.push(0);colors.push(255);
+
+        //indices
+        var orig = i*2; //current bottom
+        var orig_up = orig+1;
+        var orig_right = ((i+1)*2) % (2*NUM_CYLINDER_POINTS);
+        var orig_up_right = orig_right+1;
+        indices.push(v_offset + orig); indices.push(v_offset + orig_up); indices.push(v_offset + orig_up_right);
+        indices.push(v_offset + orig); indices.push(v_offset + orig_up_right); indices.push(v_offset + orig_right);
+    }
+
+    //caps
+    {
+        vb.push(center_pos[0]); vb.push(-0.5*HEIGHT + center_pos[1]); vb.push(0);
+        vb.push(center_pos[0]); vb.push(0.5*HEIGHT + center_pos[1]); vb.push(0);
+
+        normals.push(0); normals.push(0); normals.push(0); 
+        normals.push(0); normals.push(0); normals.push(0); 
+
+        colors.push(255);colors.push(0);colors.push(255);
+        colors.push(255);colors.push(0);colors.push(255);
+
+        var idx_pole_0 = 2*NUM_CYLINDER_POINTS;
+        var idx_pole_1 = idx_pole_0+1;
+        
+        for (var i=0; i<NUM_CYLINDER_POINTS; ++i) {
+
+            var orig = i*2; //current bottom
+            var orig_up = orig+1;
+            var orig_right = ((i+1)*2) % (2*NUM_CYLINDER_POINTS);
+            var orig_up_right = orig_right+1;
+
+            indices.push(v_offset + idx_pole_0); indices.push(v_offset + orig); indices.push(v_offset + orig_right);
+            indices.push(v_offset + idx_pole_1); indices.push(v_offset + orig_up_right); indices.push(v_offset + orig_up);
+        }
+    }
+}
+
+//*********************************************************
 function construct_battery() {
 
     var battery_vb = new Array();
@@ -135,57 +211,47 @@ function construct_battery() {
 
     const NUM_CYLINDER_POINTS = 50;
     this.BATTERY_RADIUS = 0.35;
-    const BATTERY_HEIGHT = 0.15*this.central_pole_height;
+    this.BOTTOM_BATTERY_RADIUS = 0.95*this.BATTERY_RADIUS;
+    const TOP_RATIO = 1.05;
+    this.TOP_BATTERY_RADIUS = TOP_RATIO*this.BATTERY_RADIUS;
 
-    var battery_pos = vec2.fromValues( this.CENTRAL_POLE_RADIUS + this.BATTERY_RADIUS, 0.7*this.central_pole_height);
+    const BATTERY_HEIGHT = 0.1*this.central_pole_height;
+    const TOP_BATTERY_HEIGHT = 0.1*BATTERY_HEIGHT;
 
-    var theta = 2.0*Math.PI / NUM_CYLINDER_POINTS;
-    for (var i=0; i<NUM_CYLINDER_POINTS; ++i) {
-        var cos = Math.cos(i*theta);
-        var sin = Math.sin(i*theta);
-        var x = this.BATTERY_RADIUS*cos;
-        var z = this.BATTERY_RADIUS*sin;
+    var battery_pos = vec2.fromValues( this.CENTRAL_POLE_RADIUS + this.TOP_BATTERY_RADIUS, 0.7*this.central_pole_height);
+    construct_cylinder( NUM_CYLINDER_POINTS, 
+                        this.BATTERY_RADIUS, 
+                        this.BOTTOM_BATTERY_RADIUS, 
+                        BATTERY_HEIGHT, 
+                        battery_pos, 
+                        battery_vb, 
+                        battery_normal, 
+                        colors, 
+                        battery_indices, 
+                        1.0);
 
-        battery_vb.push(x + battery_pos[0]); battery_vb.push(-0.5*BATTERY_HEIGHT + battery_pos[1]); battery_vb.push(z);
-        battery_vb.push(x + battery_pos[0]); battery_vb.push(0.5*BATTERY_HEIGHT + battery_pos[1]); battery_vb.push(z);
+    var top_battery_pos = vec2.fromValues( battery_pos[0], battery_pos[1] + 0.5*BATTERY_HEIGHT + 0.5*TOP_BATTERY_HEIGHT);
+    construct_cylinder( NUM_CYLINDER_POINTS, 
+                        this.TOP_BATTERY_RADIUS, 
+                        this.TOP_BATTERY_RADIUS, 
+                        TOP_BATTERY_HEIGHT, 
+                        top_battery_pos, 
+                        battery_vb, 
+                        battery_normal, 
+                        colors, 
+                        battery_indices, 
+                        1.0);
 
-        battery_normal.push(0); battery_normal.push(0); battery_normal.push(0); 
-        battery_normal.push(0); battery_normal.push(0); battery_normal.push(0); 
-
-        colors.push(255);colors.push(0);colors.push(255);
-        colors.push(255);colors.push(0);colors.push(255);
-
-        var orig = i*2; //current bottom
-        var orig_up = orig+1;
-        var orig_right = ((i+1)*2) % (2*NUM_CYLINDER_POINTS);
-        var orig_up_right = orig_right+1;
-        battery_indices.push(orig); battery_indices.push(orig_up); battery_indices.push(orig_up_right);
-        battery_indices.push(orig); battery_indices.push(orig_up_right); battery_indices.push(orig_right);
-    }
-
-    //caps
-    battery_vb.push(battery_pos[0]); battery_vb.push(-0.5*BATTERY_HEIGHT + battery_pos[1]); battery_vb.push(0);
-    battery_vb.push(battery_pos[0]); battery_vb.push(0.5*BATTERY_HEIGHT + battery_pos[1]); battery_vb.push(0);
-
-    battery_normal.push(0); battery_normal.push(0); battery_normal.push(0); 
-    battery_normal.push(0); battery_normal.push(0); battery_normal.push(0); 
-
-    colors.push(255);colors.push(0);colors.push(255);
-    colors.push(255);colors.push(0);colors.push(255);
-
-    var idx_pole_0 = 2*NUM_CYLINDER_POINTS;
-    var idx_pole_1 = idx_pole_0+1;
-    
-    for (var i=0; i<NUM_CYLINDER_POINTS; ++i) {
-
-        var orig = i*2; //current bottom
-        var orig_up = orig+1;
-        var orig_right = ((i+1)*2) % (2*NUM_CYLINDER_POINTS);
-        var orig_up_right = orig_right+1;
-
-        battery_indices.push(idx_pole_0); battery_indices.push(orig); battery_indices.push(orig_right);
-        battery_indices.push(idx_pole_1); battery_indices.push(orig_up_right); battery_indices.push(orig_up);
-    }
+    construct_cylinder( NUM_CYLINDER_POINTS, 
+                        this.BATTERY_RADIUS, 
+                        this.BOTTOM_BATTERY_RADIUS, 
+                        0.8*BATTERY_HEIGHT, 
+                        battery_pos, 
+                        battery_vb, 
+                        battery_normal, 
+                        colors, 
+                        battery_indices, 
+                        1.35);
 
     var arrays = {  position:battery_vb, 
                     normal:battery_normal,
