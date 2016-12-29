@@ -8,8 +8,8 @@
 //Globals
 var g_HasInitialised = false;
 twgl.setDefaults({attribPrefix: "a_", crossOrigin: ""});
-var g_TheDocument = document.getElementById("c");
-var gl = twgl.getWebGLContext(g_TheDocument);
+var g_TheCanvas = document.getElementById("c");
+var gl = twgl.getWebGLContext(g_TheCanvas);
 var gl_ProgramInfos = {};
 
 //camera
@@ -107,11 +107,11 @@ var uniforms = {
 //key functions
 //*******************************************************************************************************
 var g_CurrentlyPressedKeys = {};
-g_TheDocument.addEventListener('keyup',function(event) 
+g_TheCanvas.addEventListener('keyup',function(event) 
 {
     g_CurrentlyPressedKeys[event.keyCode] = false;
 });     
-g_TheDocument.addEventListener('keydown',function(event) 
+g_TheCanvas.addEventListener('keydown',function(event) 
 {
     g_CurrentlyPressedKeys[event.keyCode] = true;
 });     
@@ -122,17 +122,17 @@ g_TheDocument.addEventListener('keydown',function(event)
 var g_MouseDown = false;
 var g_LastMouseX = null;
 var g_LastMouseY = null;
-g_TheDocument.addEventListener('mousedown',function(event) 
+g_TheCanvas.addEventListener('mousedown',function(event) 
 {
     g_MouseDown = true;
     g_LastMouseX = event.clientX;
     g_LastMouseY = event.clientY;
 });
-g_TheDocument.addEventListener('mouseup',function(event) 
+g_TheCanvas.addEventListener('mouseup',function(event) 
 {
     g_MouseDown = false;
 });
-g_TheDocument.addEventListener('mousemove',function(event) 
+g_TheCanvas.addEventListener('mousemove',function(event) 
 {
     if (!g_MouseDown) 
     {
@@ -174,6 +174,18 @@ function animate(time)
 
         loadFiles("Skydome", ['./js/shaders/Skydome.vsh', './js/shaders/Skydome.fsh'], createShaderProgram, 
           function (url) {alert('Failed to download "' + url + '"');}); 
+
+        if (g_TheCanvas.getContext) {
+            // get context
+            var ctx = g_TheCanvas.getContext('2d');
+
+            // scale 2x
+            if(window.devicePixelRatio == 2) {
+                // g_TheCanvas.setAttribute('width', 300);
+                // g_TheCanvas.setAttribute('height', 300);
+                ctx.scale(2, 2);
+            }
+        }
 
         g_HasInitialised = true;
     }

@@ -1,4 +1,4 @@
-//make the battery better: 'side protrusions', funny side pipe things, cap clips, 2 top attenas (wires attach to pole), could sit ona bar...
+//make the battery better: funny side pipe things, cap clips, 2 top attenas (wires attach to pole), could sit ona bar...
 //battery pack 2: square pack, extra box protusion (cap / side), attach via bar
 //tbar version 1: equal balance, top discs (semicircles flattened), vertical spring things, side protusions
 //tbar version 2: complete one side balance, 
@@ -372,7 +372,7 @@ function construct_battery() {
                         vec3.fromValues(battery_pos[0] + 0.5*CONNECTOR_DIM[0], battery_pos[1] - RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]));
 
     //construct a bunch of protrusions from the top
-    const NUM_PROTRUSIONS = 10;
+    const NUM_PROTRUSIONS = 5;
     for (var c_protrusion=0; c_protrusion<NUM_PROTRUSIONS; ++c_protrusion) {
         var theta = 2.0*Math.PI/NUM_PROTRUSIONS * c_protrusion;
         var cos = Math.cos(theta);
@@ -382,12 +382,12 @@ function construct_battery() {
         quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0), theta);
         var obj_mat = mat4.create();
         var pos = vec3.create();
-        vec3.add(pos,battery_pos,vec3.fromValues(this.CAP_RADIUS*cos,0.45*BATTERY_HEIGHT,-this.CAP_RADIUS*sin));
+        vec3.add(pos,battery_pos,vec3.fromValues(this.BATTERY_RADIUS*cos,0.4*BATTERY_HEIGHT,-this.BATTERY_RADIUS*sin));
         mat4.fromRotationTranslation(obj_mat, rot_quat, pos);
 
         
 
-        construct_sectioned_cylinder(battery_vb, battery_normal, colors, battery_indices, 3, vec3.fromValues(0.05,0.1,0.1), -Math.PI/2.0, obj_mat);
+        construct_sectioned_cylinder(battery_vb, battery_normal, colors, battery_indices, 3, vec3.fromValues(0.1,0.2,0.2), -Math.PI/3.0, obj_mat);
     }
 
     var arrays = {  position:battery_vb, 
