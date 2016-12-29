@@ -313,5 +313,9 @@ function render(time) {
 
     twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.battery_bufferInfo);
     gl.drawElements(gl.TRIANGLES, pylon.battery_bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
+
+    //debug render one protrusion
+    // twgl.setBuffersAndAttributes(gl, gl_ProgramInfos["Basic"], pylon.protrusion_bufferInfo);
+    // gl.drawElements(gl.TRIANGLES, pylon.protrusion_bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
   }
 }

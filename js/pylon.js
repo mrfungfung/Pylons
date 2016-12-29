@@ -1,4 +1,4 @@
-//make the battery better: rings to attach to central pole. 'side protrusions', funny side pipe things, cap clips, 2 top attenas (wires attach to pole), could sit ona bar...
+//make the battery better: 'side protrusions', funny side pipe things, cap clips, 2 top attenas (wires attach to pole), could sit ona bar...
 //battery pack 2: square pack, extra box protusion (cap / side), attach via bar
 //tbar version 1: equal balance, top discs (semicircles flattened), vertical spring things, side protusions
 //tbar version 2: complete one side balance, 
@@ -69,6 +69,106 @@ function construct_cuboid(vb, normals, colors, indices, dim, center_pos) {
     for (var c_index=0; c_index<box_indices.length; ++c_index) {
         indices.push(box_indices[c_index] + v_offset);
     }
+}
+
+//*********************************************************
+//as we all know the stupid cross section width is wrong as we need more clever math to account for angle of each bend
+function construct_sectioned_cylinder(vb, normals, colors, indices, num_sections, section_dim, theta, obj_transform_mat) {
+
+    var v_offset = vb.length/3;
+
+    //initial cap
+    var p = [
+                vec3.fromValues(0,0.5*section_dim[1],0.5*section_dim[2]),
+                vec3.fromValues(0,0.5*section_dim[1],-0.5*section_dim[2]),
+                vec3.fromValues(0,-0.5*section_dim[1],0.5*section_dim[2]),
+                vec3.fromValues(0,-0.5*section_dim[1],-0.5*section_dim[2]),
+            ];
+    for (var i=0; i<4; ++i) {
+        vec3.transformMat4(p[i],p[i],obj_transform_mat);
+        vb.push(p[i][0]);vb.push(p[i][1]);vb.push(p[i][2]);
+    }
+
+    indices.push(v_offset+0);indices.push(v_offset+1);indices.push(v_offset+2);
+    indices.push(v_offset+2);indices.push(v_offset+1);indices.push(v_offset+3);
+
+    for (var i=0; i<4*3; ++i) { normals.push(0); colors.push(255); }
+
+    var per_section_theta = theta/num_sections;
+    var last_pos = vec3.fromValues(0,0,0);
+    for (var c_section=0; c_section<num_sections+1; ++c_section) {
+
+        //work out the cur pos
+        var right_vec = vec3.fromValues(1,0,0);
+
+        //rotate around z by current theta
+        var cur_theta = c_section * per_section_theta;
+        var cos = Math.cos(cur_theta);
+        var sin = Math.sin(cur_theta);
+        var vx = cos*right_vec[0] + sin*right_vec[1];
+        var vy = sin*right_vec[0] - cos*right_vec[1];
+        right_vec[0] = vx;
+        right_vec[1] = vy;
+
+        var cur_pos = vec3.create();
+        var length_vec = vec3.create();
+        vec3.mul(length_vec, right_vec, vec3.fromValues(section_dim[0],section_dim[0],section_dim[0]));
+        vec3.add(cur_pos,last_pos,length_vec);
+
+        //work out the normal vector
+        //a bit dumb - we work out the NEXT pos
+        var total_dir = vec3.clone(right_vec);
+        if (c_section < num_sections) {
+            var next_right_vec = vec3.fromValues(1,0,0);
+            var next_theta = (c_section+1) * per_section_theta;
+            cos = Math.cos(next_theta);
+            sin = Math.sin(next_theta);
+            vx = cos*next_right_vec[0] + sin*next_right_vec[1];
+            vy = sin*next_right_vec[0] - cos*next_right_vec[1];
+            next_right_vec[0] = vx;
+            next_right_vec[1] = vy;
+
+            vec3.add(total_dir, right_vec, next_right_vec);
+            vec3.normalize(total_dir,total_dir);
+        }
+
+        var normal_vec = vec3.fromValues(-total_dir[1],total_dir[0],total_dir[2]);
+
+        v_offset = vb.length/3;
+        
+        //push the square        
+        var p = [
+                vec3.fromValues(cur_pos[0] + 0.5*section_dim[1]*normal_vec[0],cur_pos[1] + 0.5*section_dim[1]*normal_vec[1],cur_pos[2] + 0.5*section_dim[2]),
+                vec3.fromValues(cur_pos[0] + 0.5*section_dim[1]*normal_vec[0],cur_pos[1] + 0.5*section_dim[1]*normal_vec[1],cur_pos[2] - 0.5*section_dim[2]),
+                vec3.fromValues(cur_pos[0] - 0.5*section_dim[1]*normal_vec[0],cur_pos[1] - 0.5*section_dim[1]*normal_vec[1],cur_pos[2] + 0.5*section_dim[2]),
+                vec3.fromValues(cur_pos[0] - 0.5*section_dim[1]*normal_vec[0],cur_pos[1] - 0.5*section_dim[1]*normal_vec[1],cur_pos[2] - 0.5*section_dim[2]),
+            ];
+        for (var i=0; i<4; ++i) {
+            vec3.transformMat4(p[i],p[i],obj_transform_mat);
+            vb.push(p[i][0]);vb.push(p[i][1]);vb.push(p[i][2]);
+        }
+        
+        //ok need to link up the tunnel...
+        indices.push(v_offset-4);indices.push(v_offset+0);indices.push(v_offset-3);
+        indices.push(v_offset-3);indices.push(v_offset+0);indices.push(v_offset+1);
+
+        indices.push(v_offset-2);indices.push(v_offset-1);indices.push(v_offset+2);
+        indices.push(v_offset+2);indices.push(v_offset-1);indices.push(v_offset+3);
+
+        indices.push(v_offset-4);indices.push(v_offset-2);indices.push(v_offset+0);
+        indices.push(v_offset+0);indices.push(v_offset-2);indices.push(v_offset+2);
+
+        indices.push(v_offset-3);indices.push(v_offset+1);indices.push(v_offset-1);
+        indices.push(v_offset+1);indices.push(v_offset+3);indices.push(v_offset-1);
+
+        for (var i=0; i<4*3; ++i) { normals.push(0); colors.push(0); }
+
+        last_pos = cur_pos;
+    }
+
+    //cap
+    indices.push(v_offset+0);indices.push(v_offset+2);indices.push(v_offset+1);
+    indices.push(v_offset+2);indices.push(v_offset+3);indices.push(v_offset+1);
 }
 
 //*********************************************************
@@ -271,6 +371,25 @@ function construct_battery() {
                         CONNECTOR_DIM, 
                         vec3.fromValues(battery_pos[0] + 0.5*CONNECTOR_DIM[0], battery_pos[1] - RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]));
 
+    //construct a bunch of protrusions from the top
+    const NUM_PROTRUSIONS = 10;
+    for (var c_protrusion=0; c_protrusion<NUM_PROTRUSIONS; ++c_protrusion) {
+        var theta = 2.0*Math.PI/NUM_PROTRUSIONS * c_protrusion;
+        var cos = Math.cos(theta);
+        var sin = Math.sin(theta);
+
+        var rot_quat = quat.create();
+        quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0), theta);
+        var obj_mat = mat4.create();
+        var pos = vec3.create();
+        vec3.add(pos,battery_pos,vec3.fromValues(this.CAP_RADIUS*cos,0.45*BATTERY_HEIGHT,-this.CAP_RADIUS*sin));
+        mat4.fromRotationTranslation(obj_mat, rot_quat, pos);
+
+        
+
+        construct_sectioned_cylinder(battery_vb, battery_normal, colors, battery_indices, 3, vec3.fromValues(0.05,0.1,0.1), -Math.PI/2.0, obj_mat);
+    }
+
     var arrays = {  position:battery_vb, 
                     normal:battery_normal,
                     vertcolor : {numComponents:3, data:Uint8Array.from(colors)},
@@ -290,4 +409,24 @@ function Pylon(central_pole_height) {
 
     this.construct_battery = construct_battery;
     this.construct_battery();
+
+    //debug create one protrusion
+    // {
+    //     var vb = new Array();
+    //     var normals = new Array();
+    //     var colors = new Array();
+    //     var indices = new Array();
+
+    //     var rot_quat = quat.create();
+    //     quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0),Math.PI/4.0);
+    //     var obj_mat = mat4.create();
+    //     mat4.fromRotationTranslation(obj_mat, rot_quat, vec3.fromValues(0,0,0));
+    //     construct_sectioned_cylinder(vb, normals, colors, indices, 2, vec3.fromValues(0.75,0.2,0.2), -Math.PI/2.0, obj_mat);
+
+    //     var arrays = {  position:vb, 
+    //                     normal:normals,
+    //                     vertcolor : {numComponents:3, data:Uint8Array.from(colors)},
+    //                     indices:Uint16Array.from(indices)};
+    //     this.protrusion_bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays);
+    // }
 }
