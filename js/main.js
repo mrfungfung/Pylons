@@ -181,9 +181,9 @@ function animate(time)
 
             // scale 2x
             if(window.devicePixelRatio == 2) {
-                // g_TheCanvas.setAttribute('width', 300);
-                // g_TheCanvas.setAttribute('height', 300);
-                ctx.scale(2, 2);
+                g_TheCanvas.width = 320*2;
+                g_TheCanvas.height = 480*2;
+                
             }
         }
 
