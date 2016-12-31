@@ -175,18 +175,17 @@ function animate(time)
         loadFiles("Skydome", ['./js/shaders/Skydome.vsh', './js/shaders/Skydome.fsh'], createShaderProgram, 
           function (url) {alert('Failed to download "' + url + '"');}); 
 
-        if (g_TheCanvas.getContext) {
-            // get context
-            var ctx = g_TheCanvas.getContext('2d');
+        //do some madness
+        var devicePixelRatio = window.devicePixelRatio || 1;
+        var backingStoreRatio = gl.webkitBackingStorePixelRatio ||
+                                    gl.mozBackingStorePixelRatio ||
+                                    gl.msBackingStorePixelRatio ||
+                                    gl.oBackingStorePixelRatio ||
+                                    gl.backingStorePixelRatio || 1;
+        var ratio = devicePixelRatio / backingStoreRatio;
 
-            // scale 2x
-            if(window.devicePixelRatio == 2) {
-                g_TheCanvas.width = 320*2;
-                g_TheCanvas.height = 480*2;
-                
-            }
-        }
-
+        twgl.resizeCanvasToDisplaySize(gl.canvas,ratio);
+        
         g_HasInitialised = true;
     }
 
@@ -253,7 +252,6 @@ var g_ShadersLoaded = false;
 function render(time) {
 
   time *= 0.0001;
-  twgl.resizeCanvasToDisplaySize(gl.canvas);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
   gl.enable(gl.DEPTH_TEST);
