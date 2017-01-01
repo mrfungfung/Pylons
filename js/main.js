@@ -1,6 +1,8 @@
-//make a cylinder battery pack
 //make the poles more elaborate with nodules and spacing and T junc or middle bar
 //make the central pole more fancy with ringlets
+//make weird subtitles thing
+
+
 
 "use strict";
 

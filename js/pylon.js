@@ -1,4 +1,4 @@
-//make the battery better: funny side pipe things, cap clips, 2 top attenas (wires attach to pole), could sit ona bar...
+//make the battery better: 2 top attenas (wires attach to pole), could sit ona bar...
 //battery pack 2: square pack, extra box protusion (cap / side), attach via bar
 //tbar version 1: equal balance, top discs (semicircles flattened), vertical spring things, side protusions
 //tbar version 2: complete one side balance, 
@@ -25,16 +25,18 @@ function construct_central_pole() {
     const NUM_CYLINDER_POINTS = 50;
     this.CENTRAL_POLE_RADIUS = 0.2;
 
+    var obj_mat = mat4.create();
+    mat4.fromTranslation(obj_mat, vec3.fromValues(0,0.5*this.central_pole_height,0));
     construct_cylinder( NUM_CYLINDER_POINTS, 
                         this.CENTRAL_POLE_RADIUS, 
                         this.CENTRAL_POLE_RADIUS, 
                         this.central_pole_height, 
-                        vec3.fromValues(0,0.5*this.central_pole_height,0), 
                         central_pole_vb, 
                         central_pole_normal, 
                         colors, 
                         central_pole_indices, 
-                        1.0);
+                        1.0,
+                        obj_mat);
     
     var arrays = {  position:central_pole_vb, 
                     normal:central_pole_normal,
@@ -45,8 +47,7 @@ function construct_central_pole() {
 }
 
 //*********************************************************
-function construct_cuboid(vb, normals, colors, indices, dim, center_pos) {
-
+function construct_cuboid_geom(vb, normals, colors, indices, dim) {
     var v_offset = vb.length/3;
 
     const BOX_POSITION = [1, 1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1];
@@ -57,9 +58,9 @@ function construct_cuboid(vb, normals, colors, indices, dim, center_pos) {
             idx1 = c_vert*3 + 1,
             idx2 = c_vert*3 + 2;
 
-        vb.push(BOX_POSITION[idx0] * 0.5*dim[0] + center_pos[0]);
-        vb.push(BOX_POSITION[idx1] * 0.5*dim[1] + center_pos[1]);
-        vb.push(BOX_POSITION[idx2] * 0.5*dim[2] + center_pos[2]);
+        vb.push(BOX_POSITION[idx0] * 0.5*dim[0]);
+        vb.push(BOX_POSITION[idx1] * 0.5*dim[1]);
+        vb.push(BOX_POSITION[idx2] * 0.5*dim[2]);
 
         normals.push(0);normals.push(0);normals.push(0);
         colors.push(255);colors.push(0);colors.push(0);
@@ -72,27 +73,78 @@ function construct_cuboid(vb, normals, colors, indices, dim, center_pos) {
 }
 
 //*********************************************************
+function construct_cuboid(vb, normals, colors, indices, dim, center_pos) {
+
+    var offset = vb.length;
+    
+    construct_cuboid_geom(vb, normals, colors, indices, dim);
+
+    const NUM_VERTS = 24;
+    for (var c_vert=0; c_vert<NUM_VERTS; ++c_vert) {
+        var idx0 = c_vert*3 + 0,
+            idx1 = c_vert*3 + 1,
+            idx2 = c_vert*3 + 2;
+
+        vb[offset + idx0] += center_pos[0];
+        vb[offset + idx1] += center_pos[1];
+        vb[offset + idx2] += center_pos[2];
+    }
+}
+
+//*********************************************************
+function construct_cuboid_transform(vb, normals, colors, indices, dim, obj_transform_mat) {
+
+    var offset = vb.length;
+    
+    construct_cuboid_geom(vb, normals, colors, indices, dim);
+
+    const NUM_VERTS = 24;
+    for (var c_vert=0; c_vert<NUM_VERTS; ++c_vert) {
+        var idx0 = c_vert*3 + 0,
+            idx1 = c_vert*3 + 1,
+            idx2 = c_vert*3 + 2;
+
+        var pos = vec3.fromValues(vb[offset + idx0],vb[offset + idx1],vb[offset + idx2]);
+        vec3.transformMat4(pos,pos,obj_transform_mat);
+
+        vb[offset + idx0] = pos[0];
+        vb[offset + idx1] = pos[1];
+        vb[offset + idx2] = pos[2];
+    }
+}
+
+//*********************************************************
 //as we all know the stupid cross section width is wrong as we need more clever math to account for angle of each bend
+//section_dim[0] is length of pipe
+//section_dim[1] is length of radius of pipe
 function construct_sectioned_cylinder(vb, normals, colors, indices, num_sections, section_dim, theta, obj_transform_mat) {
 
-    var v_offset = vb.length/3;
+    var center_index = vb.length/3;
+    var v_offset = center_index+1;
 
     //initial cap
-    var p = [
-                vec3.fromValues(0,0.5*section_dim[1],0.5*section_dim[2]),
-                vec3.fromValues(0,0.5*section_dim[1],-0.5*section_dim[2]),
-                vec3.fromValues(0,-0.5*section_dim[1],0.5*section_dim[2]),
-                vec3.fromValues(0,-0.5*section_dim[1],-0.5*section_dim[2]),
-            ];
-    for (var i=0; i<4; ++i) {
-        vec3.transformMat4(p[i],p[i],obj_transform_mat);
-        vb.push(p[i][0]);vb.push(p[i][1]);vb.push(p[i][2]);
+    //cap vertex
+    var p = vec3.fromValues(0,0,0);
+    vec3.transformMat4(p,p,obj_transform_mat);
+    vb.push(p[0]);vb.push(p[1]);vb.push(p[2]);
+    
+    const NUM_YZ_SECTIONS = 10;
+    for (var i=0; i<NUM_YZ_SECTIONS; ++i) {
+        var cur_theta = i/NUM_YZ_SECTIONS * 2.0*Math.PI;
+        var cos = Math.cos(cur_theta);
+        var sin = Math.sin(cur_theta);
+        var p = vec3.fromValues(0,cos*section_dim[1],sin*section_dim[1]);
+        vec3.transformMat4(p,p,obj_transform_mat);
+
+        vb.push(p[0]);vb.push(p[1]);vb.push(p[2]);
     }
 
-    indices.push(v_offset+0);indices.push(v_offset+1);indices.push(v_offset+2);
-    indices.push(v_offset+2);indices.push(v_offset+1);indices.push(v_offset+3);
+    for (var i=0; i<NUM_YZ_SECTIONS; ++i) {
+        var idx_next = (i+1)%NUM_YZ_SECTIONS;
+        indices.push(center_index);indices.push( v_offset+idx_next );indices.push(v_offset+i);
+    }
 
-    for (var i=0; i<4*3; ++i) { normals.push(0); colors.push(255); }
+    for (var i=0; i<(NUM_YZ_SECTIONS+1)*3; ++i) { normals.push(0); colors.push(255); }
 
     var per_section_theta = theta/num_sections;
     var last_pos = vec3.fromValues(0,0,0);
@@ -133,42 +185,53 @@ function construct_sectioned_cylinder(vb, normals, colors, indices, num_sections
         }
 
         var normal_vec = vec3.fromValues(-total_dir[1],total_dir[0],total_dir[2]);
+        var cross_vec = vec3.create();
+        vec3.cross(cross_vec,total_dir,normal_vec);
 
         v_offset = vb.length/3;
         
-        //push the square        
-        var p = [
-                vec3.fromValues(cur_pos[0] + 0.5*section_dim[1]*normal_vec[0],cur_pos[1] + 0.5*section_dim[1]*normal_vec[1],cur_pos[2] + 0.5*section_dim[2]),
-                vec3.fromValues(cur_pos[0] + 0.5*section_dim[1]*normal_vec[0],cur_pos[1] + 0.5*section_dim[1]*normal_vec[1],cur_pos[2] - 0.5*section_dim[2]),
-                vec3.fromValues(cur_pos[0] - 0.5*section_dim[1]*normal_vec[0],cur_pos[1] - 0.5*section_dim[1]*normal_vec[1],cur_pos[2] + 0.5*section_dim[2]),
-                vec3.fromValues(cur_pos[0] - 0.5*section_dim[1]*normal_vec[0],cur_pos[1] - 0.5*section_dim[1]*normal_vec[1],cur_pos[2] - 0.5*section_dim[2]),
-            ];
-        for (var i=0; i<4; ++i) {
-            vec3.transformMat4(p[i],p[i],obj_transform_mat);
-            vb.push(p[i][0]);vb.push(p[i][1]);vb.push(p[i][2]);
+        for (var i=0; i<NUM_YZ_SECTIONS; ++i) {
+            var cur_theta = i/NUM_YZ_SECTIONS * 2.0*Math.PI;
+            var cos = Math.cos(cur_theta);
+            var sin = Math.sin(cur_theta);
+            var b0 = vec3.create();
+            var b1 = vec3.create();
+            vec3.scale(b0,normal_vec,section_dim[1]*cos)
+            vec3.scale(b1,cross_vec,section_dim[1]*sin)
+
+            var p = vec3.create();            
+            vec3.add(p,cur_pos,b0);
+            vec3.add(p,p,b1);
+
+            vec3.transformMat4(p,p,obj_transform_mat);
+            vb.push(p[0]);vb.push(p[1]);vb.push(p[2]);
         }
-        
+
         //ok need to link up the tunnel...
-        indices.push(v_offset-4);indices.push(v_offset+0);indices.push(v_offset-3);
-        indices.push(v_offset-3);indices.push(v_offset+0);indices.push(v_offset+1);
+        for (var i=0; i<NUM_YZ_SECTIONS; ++i) {
+            var next_idx = (i+1)%NUM_YZ_SECTIONS;
+            indices.push(v_offset-NUM_YZ_SECTIONS+i);indices.push(v_offset-NUM_YZ_SECTIONS+next_idx);indices.push(v_offset+i);
+            indices.push(v_offset-NUM_YZ_SECTIONS+next_idx);indices.push( v_offset+next_idx );indices.push(v_offset+i);
+        }
 
-        indices.push(v_offset-2);indices.push(v_offset-1);indices.push(v_offset+2);
-        indices.push(v_offset+2);indices.push(v_offset-1);indices.push(v_offset+3);
-
-        indices.push(v_offset-4);indices.push(v_offset-2);indices.push(v_offset+0);
-        indices.push(v_offset+0);indices.push(v_offset-2);indices.push(v_offset+2);
-
-        indices.push(v_offset-3);indices.push(v_offset+1);indices.push(v_offset-1);
-        indices.push(v_offset+1);indices.push(v_offset+3);indices.push(v_offset-1);
-
-        for (var i=0; i<4*3; ++i) { normals.push(0); colors.push(0); }
+        for (var i=0; i<NUM_YZ_SECTIONS*3; ++i) { normals.push(0); colors.push(0); }
 
         last_pos = cur_pos;
     }
 
-    //cap
-    indices.push(v_offset+0);indices.push(v_offset+2);indices.push(v_offset+1);
-    indices.push(v_offset+2);indices.push(v_offset+3);indices.push(v_offset+1);
+    // //cap
+    //end cap vertex
+    var end_center_index = vb.length/3;
+    vec3.transformMat4(p,last_pos,obj_transform_mat);
+    vb.push(p[0]);vb.push(p[1]);vb.push(p[2]);
+    for (var i=0; i<3; ++i) { normals.push(0); colors.push(255); }
+    
+    for (var i=0; i<NUM_YZ_SECTIONS; ++i) {
+        var idx_next = (i+1)%NUM_YZ_SECTIONS;
+        indices.push(end_center_index);indices.push(v_offset+i);indices.push( v_offset+idx_next );
+    }
+
+    return p;
 }
 
 //*********************************************************
@@ -207,12 +270,12 @@ function construct_cylinder(NUM_CYLINDER_POINTS,
                             RADIUS, 
                             BOTTOM_RADIUS, 
                             HEIGHT, 
-                            center_pos, 
                             vb, 
                             normals, 
                             colors, 
                             indices, 
-                            JAG_RADIUS_RATIO) {
+                            JAG_RADIUS_RATIO,
+                            obj_transform_mat) {
 
     var v_offset = vb.length/3;
     
@@ -233,8 +296,13 @@ function construct_cylinder(NUM_CYLINDER_POINTS,
         }
 
         //outer body
-        vb.push(bx + center_pos[0]); vb.push(-0.5*HEIGHT + center_pos[1]); vb.push(bz + center_pos[2]);
-        vb.push(x + center_pos[0]); vb.push(0.5*HEIGHT + center_pos[1]); vb.push(z + center_pos[2]);
+        var p0 = vec3.fromValues(bx,-0.5*HEIGHT,bz);
+        vec3.transformMat4(p0,p0,obj_transform_mat);
+        vb.push(p0[0]);vb.push(p0[1]);vb.push(p0[2]);
+
+        var p1 = vec3.fromValues(x,0.5*HEIGHT,z);
+        vec3.transformMat4(p1,p1,obj_transform_mat);
+        vb.push(p1[0]);vb.push(p1[1]);vb.push(p1[2]);
 
         normals.push(0); normals.push(0); normals.push(0); 
         normals.push(0); normals.push(0); normals.push(0); 
@@ -253,8 +321,13 @@ function construct_cylinder(NUM_CYLINDER_POINTS,
 
     //caps
     {
-        vb.push(center_pos[0]); vb.push(-0.5*HEIGHT + center_pos[1]); vb.push(0 + center_pos[2]);
-        vb.push(center_pos[0]); vb.push(0.5*HEIGHT + center_pos[1]); vb.push(0 + center_pos[2]);
+        var p0 = vec3.fromValues(0,-0.5*HEIGHT,0);
+        vec3.transformMat4(p0,p0,obj_transform_mat);
+        vb.push(p0[0]);vb.push(p0[1]);vb.push(p0[2]);
+
+        var p1 = vec3.fromValues(0,0.5*HEIGHT,0);
+        vec3.transformMat4(p1,p1,obj_transform_mat);
+        vb.push(p1[0]);vb.push(p1[1]);vb.push(p1[2]);
 
         normals.push(0); normals.push(0); normals.push(0); 
         normals.push(0); normals.push(0); normals.push(0); 
@@ -304,72 +377,90 @@ function construct_battery() {
 
     //main body and cap
     var battery_pos = vec3.fromValues( -CONNECTOR_DIM[0], 0.7*this.central_pole_height, 0);
-    construct_cylinder( NUM_CYLINDER_POINTS, 
-                        this.BATTERY_RADIUS, 
-                        this.BOTTOM_BATTERY_RADIUS, 
-                        BATTERY_HEIGHT, 
-                        battery_pos, 
-                        battery_vb, 
-                        battery_normal, 
-                        colors, 
-                        battery_indices, 
-                        1.0);
-
     var cap_pos = vec3.fromValues( battery_pos[0], battery_pos[1] + 0.5*BATTERY_HEIGHT + 0.5*CAP_HEIGHT, 0);
-    construct_cylinder( NUM_CYLINDER_POINTS, 
-                        this.CAP_RADIUS, 
-                        this.CAP_RADIUS, 
-                        CAP_HEIGHT, 
-                        cap_pos, 
-                        battery_vb, 
-                        battery_normal, 
-                        colors, 
-                        battery_indices, 
-                        1.0);
+    {
+        var obj_mat = mat4.create();
+        mat4.fromTranslation(obj_mat, battery_pos);
+        
+        construct_cylinder( NUM_CYLINDER_POINTS, 
+                            this.BATTERY_RADIUS, 
+                            this.BOTTOM_BATTERY_RADIUS, 
+                            BATTERY_HEIGHT, 
+                            battery_vb, 
+                            battery_normal, 
+                            colors, 
+                            battery_indices, 
+                            1.0,
+                            obj_mat);
+
+        mat4.fromTranslation(obj_mat, cap_pos);
+        construct_cylinder( NUM_CYLINDER_POINTS, 
+                            this.CAP_RADIUS, 
+                            this.CAP_RADIUS, 
+                            CAP_HEIGHT, 
+                            battery_vb, 
+                            battery_normal, 
+                            colors, 
+                            battery_indices, 
+                            1.0,
+                            obj_mat);
+    }
 
     //fans
-    construct_cylinder( NUM_CYLINDER_POINTS, 
-                        this.BATTERY_RADIUS, 
-                        this.BOTTOM_BATTERY_RADIUS, 
-                        0.5*BATTERY_HEIGHT, 
-                        battery_pos, 
-                        battery_vb, 
-                        battery_normal, 
-                        colors, 
-                        battery_indices, 
-                        1.3);
+    {
+        var obj_mat = mat4.create();
+        mat4.fromTranslation(obj_mat, battery_pos);
+
+        construct_cylinder( NUM_CYLINDER_POINTS, 
+                            this.BATTERY_RADIUS, 
+                            this.BOTTOM_BATTERY_RADIUS, 
+                            0.5*BATTERY_HEIGHT, 
+                            battery_vb, 
+                            battery_normal, 
+                            colors, 
+                            battery_indices, 
+                            1.3,
+                            obj_mat);
+    }
 
     //rings and connector
-    construct_cylinder( NUM_CYLINDER_POINTS, 
-                        RING_RADIUS, 
-                        RING_RADIUS, 
-                        RING_HEIGHT, 
-                        vec3.fromValues(battery_pos[0], battery_pos[1] + RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]), 
-                        battery_vb, 
-                        battery_normal, 
-                        colors, 
-                        battery_indices, 
-                        1.0);
-    construct_cylinder( NUM_CYLINDER_POINTS, 
-                        BOTTOM_RING_RADIUS, 
-                        BOTTOM_RING_RADIUS, 
-                        RING_HEIGHT, 
-                        vec3.fromValues(battery_pos[0], battery_pos[1] - RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]), 
-                        battery_vb, 
-                        battery_normal, 
-                        colors, 
-                        battery_indices, 
-                        1.0);
-    construct_cuboid(   battery_vb, 
-                        battery_normal, 
-                        colors, battery_indices, 
-                        CONNECTOR_DIM, 
-                        vec3.fromValues(battery_pos[0] + 0.5*CONNECTOR_DIM[0], battery_pos[1] + RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]));
-    construct_cuboid(   battery_vb, 
-                        battery_normal, 
-                        colors, battery_indices, 
-                        CONNECTOR_DIM, 
-                        vec3.fromValues(battery_pos[0] + 0.5*CONNECTOR_DIM[0], battery_pos[1] - RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]));
+    {
+        var obj_mat = mat4.create();
+        mat4.fromTranslation(obj_mat, vec3.fromValues(battery_pos[0], battery_pos[1] + RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]));
+
+        construct_cylinder( NUM_CYLINDER_POINTS, 
+                            RING_RADIUS, 
+                            RING_RADIUS, 
+                            RING_HEIGHT, 
+                            battery_vb, 
+                            battery_normal, 
+                            colors, 
+                            battery_indices, 
+                            1.0,
+                            obj_mat);
+
+        mat4.fromTranslation(obj_mat, vec3.fromValues(battery_pos[0], battery_pos[1] - RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]));
+        construct_cylinder( NUM_CYLINDER_POINTS, 
+                            BOTTOM_RING_RADIUS, 
+                            BOTTOM_RING_RADIUS, 
+                            RING_HEIGHT, 
+                            battery_vb, 
+                            battery_normal, 
+                            colors, 
+                            battery_indices, 
+                            1.0,
+                            obj_mat);
+        construct_cuboid(   battery_vb, 
+                            battery_normal, 
+                            colors, battery_indices, 
+                            CONNECTOR_DIM, 
+                            vec3.fromValues(battery_pos[0] + 0.5*CONNECTOR_DIM[0], battery_pos[1] + RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]));
+        construct_cuboid(   battery_vb, 
+                            battery_normal, 
+                            colors, battery_indices, 
+                            CONNECTOR_DIM, 
+                            vec3.fromValues(battery_pos[0] + 0.5*CONNECTOR_DIM[0], battery_pos[1] - RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]));
+    }
 
     //construct a bunch of protrusions from the top
     const NUM_PROTRUSIONS = 5;
@@ -384,12 +475,78 @@ function construct_battery() {
         var pos = vec3.create();
         vec3.add(pos,battery_pos,vec3.fromValues(this.BATTERY_RADIUS*cos,0.4*BATTERY_HEIGHT,-this.BATTERY_RADIUS*sin));
         mat4.fromRotationTranslation(obj_mat, rot_quat, pos);
-
         
-
-        construct_sectioned_cylinder(battery_vb, battery_normal, colors, battery_indices, 3, vec3.fromValues(0.1,0.2,0.2), -Math.PI/3.0, obj_mat);
+        construct_sectioned_cylinder(battery_vb, battery_normal, colors, battery_indices, 3, [0.1,0.15], -Math.PI/3.0, obj_mat);
     }
 
+    //construct cap clips
+    const NUM_CLIPS = 10;
+    for (var c_clip=0; c_clip<NUM_CLIPS; ++c_clip) {
+        var theta = 2.0*Math.PI/NUM_CLIPS * c_clip;
+        var cos = Math.cos(theta);
+        var sin = Math.sin(theta);
+
+        var rot_quat = quat.create();
+        quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0), theta);
+        var obj_mat = mat4.create();
+        var pos = vec3.create();
+        vec3.add(pos,battery_pos,vec3.fromValues(this.CAP_RADIUS*cos,0.5*BATTERY_HEIGHT + 0.5*CAP_HEIGHT,-this.CAP_RADIUS*sin));
+        mat4.fromRotationTranslation(obj_mat, rot_quat, pos);
+
+        var dim = CAP_HEIGHT * 1.75;
+        construct_cuboid_transform(battery_vb, battery_normal, colors, battery_indices, vec3.fromValues(dim,dim,dim), obj_mat);
+    }
+
+    //construct side pipe thing
+    //construct 2 curved boxes and a pipe
+    {
+        const START_THETA = -Math.PI;
+        const DELTA_THETA = 20.0/180.0 * Math.PI;
+        const NUM_PIPES = 3;
+        for (var c_pipe=0; c_pipe<NUM_PIPES; ++c_pipe) {
+            var obj_mat = mat4.create();
+            
+            const PIPE_HEIGHT = 0.8*BATTERY_HEIGHT;
+            const CROSS_SECTION_POINTS = 5;
+            const PIPE_SECTION_LEN = 0.07;
+            const PIPE_RADIUS = 0.05;
+            const THETA = START_THETA + c_pipe*DELTA_THETA;
+
+            var offset = vec3.fromValues(this.BATTERY_RADIUS*Math.cos(THETA), -0.5*PIPE_HEIGHT, this.BATTERY_RADIUS*-Math.sin(THETA));
+            var p = vec3.create();
+            vec3.add(p,battery_pos,offset);
+
+            var rot_quat = quat.create();
+            quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0), THETA);
+            mat4.fromRotationTranslation(obj_mat, rot_quat, p);
+            var p0 = construct_sectioned_cylinder(battery_vb, battery_normal, colors, battery_indices, CROSS_SECTION_POINTS, [PIPE_SECTION_LEN,PIPE_RADIUS], 0.5*Math.PI, obj_mat);
+
+            vec3.add(p,p,vec3.fromValues(0,PIPE_HEIGHT,0));
+            mat4.fromRotationTranslation(obj_mat, rot_quat, p);
+            var p1 = construct_sectioned_cylinder(battery_vb, battery_normal, colors, battery_indices, CROSS_SECTION_POINTS, [PIPE_SECTION_LEN,PIPE_RADIUS], -0.5*Math.PI, obj_mat);
+
+            var l = vec3.distance(p1,p0);
+
+            vec3.add(p,p0,p1);
+            vec3.scale(p,p,0.5);
+            mat4.fromTranslation(obj_mat, p);
+
+            construct_cylinder( CROSS_SECTION_POINTS, 
+                                PIPE_RADIUS, 
+                                PIPE_RADIUS, 
+                                l, 
+                                battery_vb, 
+                                battery_normal, 
+                                colors, 
+                                battery_indices, 
+                                1.0,
+                                obj_mat);
+        }
+    }
+    
+
+    
+    //construct the actual vertex buffer
     var arrays = {  position:battery_vb, 
                     normal:battery_normal,
                     vertcolor : {numComponents:3, data:Uint8Array.from(colors)},
