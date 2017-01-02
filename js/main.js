@@ -2,16 +2,37 @@
 //make the central pole more fancy with ringlets
 //make weird subtitles thing
 
-
-
 "use strict";
+
+/**
+ * This is the function that will take care of image extracting and
+ * setting proper filename for the download.
+ * IMPORTANT: Call it from within a onclick event.
+*/
+function downloadCanvas(link, canvasId, filename) {
+    var link = document.createElement("a");
+    link.download = filename;
+    link.href = document.getElementById(canvasId).toDataURL();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    delete link.obj;
+}
+
+/** 
+ * The event handler for the link's onclick event. We give THIS as a
+ * parameter (=the link element), ID of the canvas and a filename.
+*/
+document.getElementById('download').addEventListener('click', function() {
+    downloadCanvas(this, 'c', 'Pylons.png');
+}, false);
 
 //*********************************************************
 //Globals
 var g_HasInitialised = false;
 twgl.setDefaults({attribPrefix: "a_", crossOrigin: ""});
 var g_TheCanvas = document.getElementById("c");
-var gl = twgl.getWebGLContext(g_TheCanvas);
+var gl = twgl.getWebGLContext(g_TheCanvas, {preserveDrawingBuffer:true}); //make it false to optimiiiise
 var gl_ProgramInfos = {};
 
 //camera
