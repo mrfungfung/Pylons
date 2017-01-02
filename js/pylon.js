@@ -1,4 +1,4 @@
-//make the battery better: 2 top attenas (wires attach to pole), could sit ona bar...
+//make the battery better: could sit ona bar...
 //battery pack 2: square pack, extra box protusion (cap / side), attach via bar
 //tbar version 1: equal balance, top discs (semicircles flattened), vertical spring things, side protusions
 //tbar version 2: complete one side balance, 
@@ -7,7 +7,9 @@
 //make springs as wires
 
 //ground
+//buildings
 //skydome colors
+//post process - sadly im gonna need DoF
 
 //touch events on mobile
 
@@ -378,7 +380,8 @@ function construct_battery() {
     //main body and cap
     var battery_pos = vec3.fromValues( -CONNECTOR_DIM[0], 0.7*this.central_pole_height, 0);
     var cap_pos = vec3.fromValues( battery_pos[0], battery_pos[1] + 0.5*BATTERY_HEIGHT + 0.5*CAP_HEIGHT, 0);
-    {
+
+    if (true) {
         var obj_mat = mat4.create();
         mat4.fromTranslation(obj_mat, battery_pos);
         
@@ -407,7 +410,7 @@ function construct_battery() {
     }
 
     //fans
-    {
+    if (true) {
         var obj_mat = mat4.create();
         mat4.fromTranslation(obj_mat, battery_pos);
 
@@ -424,7 +427,7 @@ function construct_battery() {
     }
 
     //rings and connector
-    {
+    if (true) {
         var obj_mat = mat4.create();
         mat4.fromTranslation(obj_mat, vec3.fromValues(battery_pos[0], battery_pos[1] + RING_HEIGHT_OFFSET_FROM_MIDDLE, battery_pos[2]));
 
@@ -463,43 +466,48 @@ function construct_battery() {
     }
 
     //construct a bunch of protrusions from the top
-    const NUM_PROTRUSIONS = 5;
-    for (var c_protrusion=0; c_protrusion<NUM_PROTRUSIONS; ++c_protrusion) {
-        var theta = 2.0*Math.PI/NUM_PROTRUSIONS * c_protrusion;
-        var cos = Math.cos(theta);
-        var sin = Math.sin(theta);
+    if (true) {
+        const NUM_PROTRUSIONS = 5;
+        for (var c_protrusion=0; c_protrusion<NUM_PROTRUSIONS; ++c_protrusion) {
+            var theta = 2.0*Math.PI/NUM_PROTRUSIONS * c_protrusion;
+            var cos = Math.cos(theta);
+            var sin = Math.sin(theta);
 
-        var rot_quat = quat.create();
-        quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0), theta);
-        var obj_mat = mat4.create();
-        var pos = vec3.create();
-        vec3.add(pos,battery_pos,vec3.fromValues(this.BATTERY_RADIUS*cos,0.4*BATTERY_HEIGHT,-this.BATTERY_RADIUS*sin));
-        mat4.fromRotationTranslation(obj_mat, rot_quat, pos);
-        
-        construct_sectioned_cylinder(battery_vb, battery_normal, colors, battery_indices, 3, [0.1,0.15], -Math.PI/3.0, obj_mat);
+            var rot_quat = quat.create();
+            quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0), theta);
+            var obj_mat = mat4.create();
+            var pos = vec3.create();
+            vec3.add(pos,battery_pos,vec3.fromValues(this.BATTERY_RADIUS*cos,0.4*BATTERY_HEIGHT,-this.BATTERY_RADIUS*sin));
+            mat4.fromRotationTranslation(obj_mat, rot_quat, pos);
+            
+            construct_sectioned_cylinder(battery_vb, battery_normal, colors, battery_indices, 3, [0.1,0.15], -Math.PI/3.0, obj_mat);
+        }
     }
 
     //construct cap clips
-    const NUM_CLIPS = 10;
-    for (var c_clip=0; c_clip<NUM_CLIPS; ++c_clip) {
-        var theta = 2.0*Math.PI/NUM_CLIPS * c_clip;
-        var cos = Math.cos(theta);
-        var sin = Math.sin(theta);
+    if (true) {
+        const NUM_CLIPS = 10;
+        for (var c_clip=0; c_clip<NUM_CLIPS; ++c_clip) {
+            var theta = 2.0*Math.PI/NUM_CLIPS * c_clip;
+            var cos = Math.cos(theta);
+            var sin = Math.sin(theta);
 
-        var rot_quat = quat.create();
-        quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0), theta);
-        var obj_mat = mat4.create();
-        var pos = vec3.create();
-        vec3.add(pos,battery_pos,vec3.fromValues(this.CAP_RADIUS*cos,0.5*BATTERY_HEIGHT + 0.5*CAP_HEIGHT,-this.CAP_RADIUS*sin));
-        mat4.fromRotationTranslation(obj_mat, rot_quat, pos);
+            var rot_quat = quat.create();
+            quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0), theta);
+            var obj_mat = mat4.create();
+            var pos = vec3.create();
+            vec3.add(pos,battery_pos,vec3.fromValues(this.CAP_RADIUS*cos,0.5*BATTERY_HEIGHT + 0.5*CAP_HEIGHT,-this.CAP_RADIUS*sin));
+            mat4.fromRotationTranslation(obj_mat, rot_quat, pos);
 
-        var dim = CAP_HEIGHT * 1.75;
-        construct_cuboid_transform(battery_vb, battery_normal, colors, battery_indices, vec3.fromValues(dim,dim,dim), obj_mat);
+            var dim = CAP_HEIGHT * 1.75;
+            construct_cuboid_transform(battery_vb, battery_normal, colors, battery_indices, vec3.fromValues(dim,dim,dim), obj_mat);
+        }
     }
 
     //construct side pipe thing
     //construct 2 curved boxes and a pipe
-    {
+    if (true) {
+
         const START_THETA = -Math.PI;
         const DELTA_THETA = 20.0/180.0 * Math.PI;
         const NUM_PIPES = 3;
@@ -544,6 +552,69 @@ function construct_battery() {
         }
     }
     
+    //make top antennas
+    if (true) {
+
+        //central cylinder and then many other cylinders
+        const ANTENNA_HEIGHT = 0.3*BATTERY_HEIGHT;
+        const ANTENNA_RADIUS = 0.13*this.BATTERY_RADIUS;
+        const CROSS_SECTION_POINTS = 5;
+
+        const NUM_ANTENNAS = 3;
+
+        for (var c_antenna=0; c_antenna<NUM_ANTENNAS; ++c_antenna) {
+
+            var theta = 2.0*Math.PI/NUM_ANTENNAS * c_antenna;
+            var cos = Math.cos(theta);
+            var sin = Math.sin(theta);
+
+            var rot_quat = quat.create();
+            quat.setAxisAngle(rot_quat, vec3.fromValues(0,1,0), theta);
+            var obj_mat = mat4.create();
+            var antenna_pos = vec3.create();
+            const SCALE_IN = 0.7;
+            vec3.add(antenna_pos,battery_pos,vec3.fromValues(SCALE_IN*this.CAP_RADIUS*cos,0.5*BATTERY_HEIGHT + CAP_HEIGHT + 0.5*ANTENNA_HEIGHT,SCALE_IN*-this.CAP_RADIUS*sin));
+            mat4.fromRotationTranslation(obj_mat, rot_quat, antenna_pos);
+
+            construct_cylinder( CROSS_SECTION_POINTS, 
+                                ANTENNA_RADIUS, 
+                                ANTENNA_RADIUS, 
+                                ANTENNA_HEIGHT, 
+                                battery_vb, 
+                                battery_normal, 
+                                colors, 
+                                battery_indices, 
+                                1.0,
+                                obj_mat);
+
+            const NUM_DISCS = 6;
+            const DISC_GAP_PERCENT = 0.03;
+            const END_DISC_GAP_PERCENT = 5*DISC_GAP_PERCENT;
+            var leftover = 1.0 - (NUM_DISCS-1)*DISC_GAP_PERCENT - 2*END_DISC_GAP_PERCENT; //gaps between them
+            const DISC_HEIGHT = leftover/NUM_DISCS * ANTENNA_HEIGHT;
+            const DISC_GAP_HEIGHT = DISC_GAP_PERCENT * ANTENNA_HEIGHT;
+            const DISC_RADIUS = 2*ANTENNA_RADIUS;
+
+            for (var i=0; i<NUM_DISCS; ++i) {
+                var y = -0.5*ANTENNA_HEIGHT + END_DISC_GAP_PERCENT*ANTENNA_HEIGHT + i*(DISC_HEIGHT + DISC_GAP_HEIGHT) + 0.5*DISC_HEIGHT;
+                
+                var pos = vec3.create();
+                vec3.add(pos,antenna_pos,vec3.fromValues(0,y,0));
+                mat4.fromRotationTranslation(obj_mat, rot_quat, pos);
+
+                construct_cylinder( CROSS_SECTION_POINTS, 
+                                    0.9*DISC_RADIUS, 
+                                    DISC_RADIUS, 
+                                    DISC_HEIGHT, 
+                                    battery_vb, 
+                                    battery_normal, 
+                                    colors, 
+                                    battery_indices, 
+                                    1.0,
+                                    obj_mat);
+            }
+        }
+    }
 
     
     //construct the actual vertex buffer

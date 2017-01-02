@@ -121,43 +121,39 @@ g_TheCanvas.addEventListener('keydown',function(event)
 //*******************************************************************************************************
 //meese functions
 //*******************************************************************************************************
-var g_MouseDown = false;
+// var g_MouseDown = false;
+var g_LastScale = null;
 var g_LastMouseX = null;
 var g_LastMouseY = null;
-g_TheCanvas.addEventListener('mousedown',function(event) 
-{
-    g_MouseDown = true;
-    g_LastMouseX = event.clientX;
-    g_LastMouseY = event.clientY;
-});
-g_TheCanvas.addEventListener('mouseup',function(event) 
-{
-    g_MouseDown = false;
-});
-g_TheCanvas.addEventListener('mousemove',function(event) 
-{
-    if (!g_MouseDown) 
-    {
-        return;
-    }
-    var newX = event.clientX;
-    var newY = event.clientY;
 
-    var deltaX = newX - g_LastMouseX;
+function rotate_camera(dx, dy) {
+
+    const SPEED_SCALE = 0.1;
     var newRotationMatrix = mat4.create();
-    mat4.rotate(newRotationMatrix, newRotationMatrix, (deltaX/180.0 * Math.PI)/10, [0, 1, 0]);
-
-    var deltaY = newY - g_LastMouseY;
-    mat4.rotate(newRotationMatrix, newRotationMatrix, (-deltaY/180.0 * Math.PI)/10, [1, 0, 0]);
+    mat4.rotate(newRotationMatrix, newRotationMatrix, (dx/180.0 * Math.PI) * SPEED_SCALE, [0, 1, 0]);
+    mat4.rotate(newRotationMatrix, newRotationMatrix, (-dy/180.0 * Math.PI) * SPEED_SCALE, [1, 0, 0]);
 
     mat4.multiply(g_CameraRotMatrix, newRotationMatrix, g_CameraRotMatrix);
+}
+
+function translate_camera(step) {
+
+    var x_vector = [g_CameraRotMatrix[0], g_CameraRotMatrix[4], g_CameraRotMatrix[8]];
+    var y_vector = [g_CameraRotMatrix[1], g_CameraRotMatrix[5], g_CameraRotMatrix[9]];
+    var z_vector = [g_CameraRotMatrix[2], g_CameraRotMatrix[6], g_CameraRotMatrix[10]];
     
-    g_LastMouseX = newX;
-    g_LastMouseY = newY;
+    g_CameraPos[0] += step[0]*x_vector[0];
+    g_CameraPos[1] += step[0]*x_vector[1];
+    g_CameraPos[2] += step[0]*x_vector[2];
+    
+    g_CameraPos[0] += step[1]*y_vector[0];
+    g_CameraPos[1] += step[1]*y_vector[1];
+    g_CameraPos[2] += step[1]*y_vector[2];
 
-    //console.log("deltaX = " + deltaX + ", deltaY = " + deltaY);
-});
-
+    g_CameraPos[0] += step[2]*z_vector[0];
+    g_CameraPos[1] += step[2]*z_vector[1];
+    g_CameraPos[2] += step[2]*z_vector[2];
+}
 
 //*******************************************************************************************************
 //animate
@@ -187,7 +183,51 @@ function animate(time)
         var ratio = devicePixelRatio / backingStoreRatio;
 
         twgl.resizeCanvasToDisplaySize(gl.canvas,ratio);
-        
+
+        //hammer time
+        var hammertime = new Hammer(g_TheCanvas);
+        hammertime.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+        hammertime.on('pan', function(ev) {
+                        // console.log(ev.eventType + ", " + ev.velocityX);
+                        if (ev.eventType == Hammer.INPUT_END) {
+                            g_LastMouseX = null;
+                            g_LastMouseY = null;
+                        }
+                        else {
+                            if (g_LastMouseX == null) {
+                                rotate_camera(ev.deltaX,ev.deltaY);
+                            }
+                            else {
+                                rotate_camera(ev.deltaX - g_LastMouseX,ev.deltaY - g_LastMouseY);
+                            }
+
+                            g_LastMouseX = ev.deltaX;
+                            g_LastMouseY = ev.deltaY;
+                        }
+                    });
+        hammertime.get('pinch').set({ enable: true });
+        hammertime.on('pinch', function(ev) {
+                    console.log(ev);
+                    if (ev.eventType == Hammer.INPUT_END) {
+                        g_LastScale = null;
+                    }
+                    else {
+                        const STEP = 1.0;
+                        var step = vec3.create();
+
+                        if (g_LastScale == null) {
+                            step[2] = ev.scale > 1.0 ? STEP : -STEP;
+                        }
+                        else {
+                            step[2] = ev.scale - g_LastScale > 0 ? STEP : -STEP;
+                        }
+
+                        translate_camera(step);
+                        g_LastScale = ev.scale;
+                    }
+                    
+        });
+
         g_HasInitialised = true;
     }
 
@@ -204,48 +244,35 @@ function process()
 //Process inputs
 function processinput()
 {
-    var STEP = 0.2;
-
-    var x_vector = [g_CameraRotMatrix[0], g_CameraRotMatrix[4], g_CameraRotMatrix[8]];
-    var y_vector = [g_CameraRotMatrix[1], g_CameraRotMatrix[5], g_CameraRotMatrix[9]];
-    var z_vector = [g_CameraRotMatrix[2], g_CameraRotMatrix[6], g_CameraRotMatrix[10]];
+    const STEP = 0.2;
+    var step = vec3.create();
     
     if (g_CurrentlyPressedKeys[87]) //'w'
     {
-        g_CameraPos[0] += STEP*z_vector[0];
-        g_CameraPos[1] += STEP*z_vector[1];
-        g_CameraPos[2] += STEP*z_vector[2];
+        step[2] = STEP;
     }
     else if (g_CurrentlyPressedKeys[83]) //'s'
     {
-        g_CameraPos[0] += -STEP*z_vector[0];
-        g_CameraPos[1] += -STEP*z_vector[1];
-        g_CameraPos[2] += -STEP*z_vector[2];
+        step[2] = -STEP;
     }
     if (g_CurrentlyPressedKeys[65]) //'a'
     {
-        g_CameraPos[0] += STEP*x_vector[0];
-        g_CameraPos[1] += STEP*x_vector[1];
-        g_CameraPos[2] += STEP*x_vector[2];
+        step[0] = STEP;
     }
     else if (g_CurrentlyPressedKeys[68]) //'d'
     {
-        g_CameraPos[0] += -STEP*x_vector[0];
-        g_CameraPos[1] += -STEP*x_vector[1];
-        g_CameraPos[2] += -STEP*x_vector[2];
+        step[0] = -STEP;
     }
     if (g_CurrentlyPressedKeys[81]) //'q'
     {
-        g_CameraPos[0] += STEP*y_vector[0];
-        g_CameraPos[1] += STEP*y_vector[1];
-        g_CameraPos[2] += STEP*y_vector[2];
+        step[1] = STEP;
     }
     else if (g_CurrentlyPressedKeys[69]) //'e'
     {
-        g_CameraPos[0] += -STEP*y_vector[0];
-        g_CameraPos[1] += -STEP*y_vector[1];
-        g_CameraPos[2] += -STEP*y_vector[2];
+        step[1] = -STEP;
     }
+
+    translate_camera(step);
 }
 
 //*******************************************************************************************************
